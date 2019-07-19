@@ -38,7 +38,7 @@ class Author implements \JsonSerializable {
 	 */
 	private $authorUsername;
 
-	public function __construct($newAuthorId, $newAuthorAvatarUrl, $newAuthorActivationToken, $newAuthorEmail, $newAuthorHash, $newAuthorUsername = null) {
+	public function __construct($newAuthorId, $newAuthorAvatarUrl, $newAuthorActivationToken, string $newAuthorEmail, $newAuthorHash, $newAuthorUsername = null) {
 		try {
 			$this->setAuthorId($newAuthorId);
 			$this->setAuthorAvatarUrl($newAuthorAvatarUrl);
@@ -152,7 +152,7 @@ class Author implements \JsonSerializable {
 		// verify the email is secure
 		$newAuthorEmail = trim($newAuthorEmail);
 		$newAuthorEmail = filter_var($newAuthorEmail, FILTER_VALIDATE_EMAIL);
-		if(empty($newProfileEmail) === true) {
+		if(empty($newAuthorEmail) === true) {
 			throw(new \InvalidArgumentException("author email is empty or insecure"));
 		}
 		// verify the email will fit in the database
@@ -222,6 +222,6 @@ class Author implements \JsonSerializable {
 		unset($fields["authorHash"]);
 		return ($fields);
 
-	}
+ 	}
 }
 ?>
