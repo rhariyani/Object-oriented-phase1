@@ -210,6 +210,129 @@ class Author implements \JsonSerializable {
 		$this->authorUsername = $newAuthorUsername;
 	}
 
+
+	/**
+	 * inserts this author into mySQL
+	 *
+	 * @param \PDO $pdo PDO connection object
+	 * @throws \PDOException when mySQL related errors occur
+	 * @throws \TypeError if $pdo is not a PDO connection object
+	 **/
+	public function insert(\PDO $pdo) : void {
+
+		// create query template
+		$query = "INSERT INTO author(authorId, authorAvatarUrl, authorActivationToken, authorEmail, authorHash, authorUsername) VALUES(:authorId, :authorAvatarUrl, :authorActivationToken, :authorEmail, :authorHash, :authorUsername)";
+		$statement = $pdo->prepare($query);
+
+		// bind the member variables to the place holders in the template
+		$parameters = ["authorId" => $this->authorId->getBytes(), "authorAvatarUrl" => $this->authorAvatarUrl,"authorActivationToken"=> $this->authorActivationToken,
+			"authorEmail" => $this->authorEmail, "authorHash" => $this->authorHash, "authorUsername" =>$this->authorUsername ];
+		$statement->execute($parameters);
+	}
+	/**
+	 * deletes this author from mySQL
+	 *S
+	 * @param \PDO $pdo PDO connection object
+	 * @throws \PDOException when mySQL related errors occur
+	 * @throws \TypeError if $pdo is not a PDO connection object
+	 **/
+	public function delete(\PDO $pdo) : void {
+
+		// create query template
+		$query = "DELETE FROM author WHERE authorId = :authorId";
+		$statement = $pdo->prepare($query);
+
+		// bind the member variables to the place holder in the template
+		$parameters = ["authorId" => $this->authorId->getBytes()];
+		$statement->execute($parameters);
+	}
+	/**
+	 * updates this Tweet in mySQL
+	 *
+	 * @param \PDO $pdo PDO connection object
+	 * @throws \PDOException when mySQL related errors occur
+	 * @throws \TypeError if $pdo is not a PDO connection object
+	 **/
+	public function update(\PDO $pdo) : void {
+
+		// create query template
+		$query = "UPDATE author SET authorAvatarUrl = :authorAvatarUrl, authorActivationToken = :authorActivationToken, authorEmail = :authorEmail, authorHash =:authorHash, authorUsername = :authorUsername WHERE authorId = :authorId";
+		$statement = $pdo->prepare($query);
+		$parameters = ["authorAvatarUrl" => $this->authorAvatarUrl,"authorActivationToken"=> $this->authorActivationToken,
+			"authorEmail" => $this->authorEmail, "authorHash" => $this->authorHash, "authorUsername" =>$this->authorUsername ];
+		$statement->execute($parameters);
+	}
+	/**
+	 * gets the Tweet by tweetId
+	 *
+	 * @param \PDO $pdo PDO connection object
+	 * @param Uuid|string $authorID author id to search for
+	 * @return Author|null Tweet found or null if not found
+	 * @throws \PDOException when mySQL related errors occur
+	 * @throws \TypeError when a variable are not the correct data type
+	 **/
+	public static function getauthorByauthorId(\PDO $pdo, $authorId) : ?author {
+		// sanitize the tweetId before searching
+		try {
+			$tweetId = self::validateUuid($authorId);
+		} catch(\InvalidArgumentException | \RangeException | \Exception | \TypeError $exception) {
+			throw(new \PDOException($exception->getMessage(), 0, $exception));
+		}
+
+		// create query template
+		$query = "SELECT authorId, authorAvatarUrl, authorActivationToken, authorEmail, authorHash, authorUsername FROM author WHERE authorID = :authorID";
+		$statement = $pdo->prepare($query);
+
+		// bind the tweet id to the place holder in the template
+		$parameters = ["authorId" => $authorId->getBytes()];
+		$statement->execute($parameters);
+
+		// grab the tweet from mySQL
+		try {
+			$author = null;
+			$statement->setFetchMode(\PDO::FETCH_ASSOC);
+			$row = $statement->fetch();
+			if($row !== false) {
+				$author = new author($row["authorId"], $row["authorAvatarUrl"], $row["authorActivationToken"], $row["authorEmail"],
+				$row["authorHash"], $row["authorUsername"]);
+			}
+		} catch(\Exception $exception) {
+			// if the row couldn't be converted, rethrow it
+			throw(new \PDOException($exception->getMessage(), 0, $exception));
+		}
+		return($author);
+	}
+	/**
+	 **
+	 * gets all authors
+	 *
+	 * @param \PDO $pdo PDO connection object
+	 * @return \SplFixedArray SplFixedArray of Tweets found or null if not found
+	 * @throws \PDOException when mySQL related errors occur
+	 * @throws \TypeError when variables are not the correct data type
+	 **/
+	public static function getAllauthors(\PDO $pdo) : \SPLFixedArray {
+		// create query template
+		$query = "SELECT authorId, authorAvatarUrl, authorActivationToken, authorEmail, authorHash, authorUsername  FROM author";
+		$statement = $pdo->prepare($query);
+		$statement->execute();
+
+		// build an array of tweets
+		$authors = new \SplFixedArray($statement->rowCount());
+		$statement->setFetchMode(\PDO::FETCH_ASSOC);
+		while(($row = $statement->fetch()) !== false) {
+			try {
+				$author = new author($row["authorId"], $row["authorAvatarUrl"], $row["authorActivationToken"], $row["authorEmail"], $row["authorHash"], $row["authorUsername"]);
+				$authors[$authors->key()] = $author;
+				$authors->next();
+			} catch(\Exception $exception) {
+				// if the row couldn't be converted, rethrow it
+				throw(new \PDOException($exception->getMessage(), 0, $exception));
+			}
+		}
+		return ($authors);
+	}
+
 	/**
 	 * formats the state variables for JSON serialization
 	 *
@@ -223,5 +346,6 @@ class Author implements \JsonSerializable {
 		return ($fields);
 
  	}
+
 }
 ?>
